@@ -1,0 +1,13 @@
+# Git Commit Generator Configuration
+
+[ai]
+# LLM API base URL
+base_url = "https://api.openai.com/v1"
+# API key (can also be set via environment variable)
+api_key = ""
+# Model ID to use
+model_id = "gpt-4"
+
+[templates]
+# Default template to use (should match a file in templates/ folder)
+default_template = "default"
