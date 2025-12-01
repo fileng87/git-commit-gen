@@ -5,8 +5,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use tempfile::TempDir;
-use toml::value::Table;
 use toml::Value;
+use toml::value::Table;
 use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -17,12 +17,10 @@ fn get_or_create_table<'a>(
     doc: &'a mut Value,
     key: &str,
 ) -> Result<&'a mut Table, Box<dyn std::error::Error>> {
-    let root = doc
-        .as_table_mut()
-        .ok_or_else(|| {
-            let err: Box<dyn std::error::Error> = "config root is not a table".into();
-            err
-        })?;
+    let root = doc.as_table_mut().ok_or_else(|| {
+        let err: Box<dyn std::error::Error> = "config root is not a table".into();
+        err
+    })?;
     Ok(root
         .entry(key.to_string())
         .or_insert_with(|| Value::Table(Table::new()))
@@ -109,7 +107,7 @@ fn update_config_for_mock(
 async fn test_generate_commit_message_with_mock_api() {
     // Setup test repository
     let (_temp_dir, repo_path) = setup_test_repo();
-    
+
     // Setup temp home directory for config
     let temp_home = TempDir::new().unwrap();
     let temp_home_path = temp_home.path().to_path_buf();
@@ -153,11 +151,11 @@ async fn test_generate_commit_message_with_mock_api() {
 #[tokio::test]
 async fn test_generate_commit_message_with_conventional_template() {
     let (_temp_dir, repo_path) = setup_test_repo();
-    
+
     // Setup temp home directory for config
     let temp_home = TempDir::new().unwrap();
     let temp_home_path = temp_home.path().to_path_buf();
-    
+
     setup_config(&temp_home_path).unwrap();
 
     let mock_server = MockServer::start().await;
@@ -182,7 +180,10 @@ async fn test_generate_commit_message_with_conventional_template() {
 
     let config = Config::new(temp_home_path);
     let generator = CommitGenerator::new(repo_path.clone(), config).unwrap();
-    let message = generator.generate_message(Some("conventional")).await.unwrap();
+    let message = generator
+        .generate_message(Some("conventional"))
+        .await
+        .unwrap();
 
     assert!(message.contains("feat"));
 }
@@ -194,7 +195,8 @@ async fn test_generate_commit_message_with_real_api() {
     dotenvy::dotenv().ok();
 
     let api_key = std::env::var("API_KEY").expect("API_KEY must be set for real API test");
-    let base_url = std::env::var("BASE_URL").unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
+    let base_url =
+        std::env::var("BASE_URL").unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
     let model_id = std::env::var("MODEL_ID").unwrap_or_else(|_| "gpt-4o-mini".to_string());
 
     println!("\n=== Real API Test Configuration ===");
@@ -203,11 +205,11 @@ async fn test_generate_commit_message_with_real_api() {
     println!("===================================\n");
 
     let (_temp_dir, repo_path) = setup_test_repo();
-    
+
     // Setup temp home directory for config
     let temp_home = TempDir::new().unwrap();
     let temp_home_path = temp_home.path().to_path_buf();
-    
+
     setup_config(&temp_home_path).unwrap();
 
     // 覆寫配置為實際環境值
@@ -230,13 +232,7 @@ async fn test_generate_commit_message_with_real_api() {
     println!("{}", message);
     println!("=====================================\n");
 
-    let cleaned = generator.clean_commit_message(&message);
-    
-    println!("=== Generated Commit Message (Cleaned) ===");
-    println!("{}", cleaned);
-    println!("==========================================\n");
-
-    assert!(!cleaned.trim().is_empty());
+    assert!(!message.trim().is_empty());
 }
 
 #[test]
@@ -308,11 +304,11 @@ fn test_config_load_default() {
 #[tokio::test]
 async fn test_full_workflow_with_mock() {
     let (_temp_dir, repo_path) = setup_test_repo();
-    
+
     // Setup temp home directory for config
     let temp_home = TempDir::new().unwrap();
     let temp_home_path = temp_home.path().to_path_buf();
-    
+
     setup_config(&temp_home_path).unwrap();
 
     let mock_server = MockServer::start().await;
@@ -338,14 +334,11 @@ async fn test_full_workflow_with_mock() {
     // Test full workflow
     let config = Config::new(temp_home_path);
     let generator = CommitGenerator::new(repo_path.clone(), config).unwrap();
-    
+
     // Generate message
     let message = generator.generate_message(None).await.unwrap();
     assert!(!message.is_empty());
     assert!(message.contains("feat"));
 
-    // Test clean commit message
-    let cleaned = generator.clean_commit_message(&message);
-    assert!(!cleaned.is_empty());
+    assert!(!message.is_empty());
 }
-

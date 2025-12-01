@@ -1,4 +1,4 @@
-use crate::errors::AppError;
+use crate::errors::{AppError, ConfigError};
 use serde::{Deserialize, Serialize};
 
 /// AI configuration from config file
@@ -55,7 +55,7 @@ impl AiClient {
     /// Create a new AI client
     pub fn new(config: AiConfig) -> Result<Self, AppError> {
         if !config.has_api_key() {
-            return Err(AppError::Config(crate::errors::ConfigError::ApiKeyMissing.into()));
+            return Err(AppError::Config(ConfigError::ApiKeyMissing));
         }
 
         Ok(Self { config })
@@ -68,9 +68,9 @@ impl AiClient {
         user_prompt: &str,
     ) -> Result<String, AppError> {
         let client = reqwest::Client::new();
-        
+
         let url = format!("{}/chat/completions", self.config.base_url);
-        
+
         let request = ChatRequest {
             model: self.config.model_id.clone(),
             messages: vec![
@@ -167,8 +167,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_ai_client_generate_commit_message() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let mock_server = MockServer::start().await;
 
@@ -183,10 +183,7 @@ mod tests {
 
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(
-                ResponseTemplate::new(200)
-                    .set_body_json(&mock_response)
-            )
+            .respond_with(ResponseTemplate::new(200).set_body_json(&mock_response))
             .mount(&mock_server)
             .await;
 
@@ -207,17 +204,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_ai_client_generate_commit_message_error() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(
-                ResponseTemplate::new(500)
-                    .set_body_string("Internal Server Error")
-            )
+            .respond_with(ResponseTemplate::new(500).set_body_string("Internal Server Error"))
             .mount(&mock_server)
             .await;
 
@@ -238,8 +232,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_ai_client_generate_commit_message_empty_choices() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let mock_server = MockServer::start().await;
 
@@ -249,10 +243,7 @@ mod tests {
 
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(
-                ResponseTemplate::new(200)
-                    .set_body_json(&mock_response)
-            )
+            .respond_with(ResponseTemplate::new(200).set_body_json(&mock_response))
             .mount(&mock_server)
             .await;
 
@@ -273,17 +264,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_ai_client_generate_commit_message_invalid_json() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(
-                ResponseTemplate::new(200)
-                    .set_body_string("not-json")
-            )
+            .respond_with(ResponseTemplate::new(200).set_body_string("not-json"))
             .mount(&mock_server)
             .await;
 
@@ -304,8 +292,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_ai_client_generate_commit_message_first_choice_trimmed() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let mock_server = MockServer::start().await;
 
@@ -328,10 +316,7 @@ mod tests {
 
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(
-                ResponseTemplate::new(200)
-                    .set_body_json(&mock_response)
-            )
+            .respond_with(ResponseTemplate::new(200).set_body_json(&mock_response))
             .mount(&mock_server)
             .await;
 

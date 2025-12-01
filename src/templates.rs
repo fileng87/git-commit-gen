@@ -29,7 +29,8 @@ pub fn load_template(template_path: &PathBuf, template_name: &str) -> Result<Str
         }
         return Err(ConfigError::TemplateNotFound {
             name: template_name.to_string(),
-        }.into());
+        }
+        .into());
     }
 
     fs::read_to_string(template_path)
@@ -47,7 +48,11 @@ mod tests {
     fn test_get_builtin_template_default() {
         let template = get_builtin_template("default");
         assert!(template.is_some());
-        assert!(template.unwrap().contains("Simple Commit Message Generator"));
+        assert!(
+            template
+                .unwrap()
+                .contains("Simple Commit Message Generator")
+        );
     }
 
     #[test]
@@ -75,9 +80,8 @@ mod tests {
     fn test_templates_not_empty() {
         let default = get_builtin_template("default").unwrap();
         let conventional = get_builtin_template("conventional").unwrap();
-        
+
         assert!(!default.is_empty());
         assert!(!conventional.is_empty());
     }
 }
-
