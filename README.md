@@ -17,23 +17,23 @@ cargo install --path .
 ### Usage
 - Generate and interactively choose action:
   ```bash
-  git-commit gen
+  git-commit-gen
   ```
 - Skip prompts and commit directly with editing:
   ```bash
-  git-commit gen --yes
+  git-commit-gen --yes
   ```
 - Use a specific template:
   ```bash
-  git-commit gen --template conventional
+  git-commit-gen --template conventional
   ```
 - Pick template from a menu (when `--template` not set):
   ```bash
-  git-commit gen --pick-template
+  git-commit-gen --pick-template
   ```
 - Commit without opening editor:
   ```bash
-  git-commit gen --yes --no-edit
+  git-commit-gen --yes --no-edit
   ```
 
 ### Configuration

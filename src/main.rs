@@ -15,7 +15,12 @@ fn main() {
 
     let result = match &cli.command {
         Some(cmd) => handler.handle_command(cmd),
-        None => Ok(()),
+        None => handler.handle_generate(
+            cli.template.as_deref(),
+            cli.pick_template,
+            cli.yes,
+            cli.no_edit,
+        ),
     };
 
     if let Err(e) = result {

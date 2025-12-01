@@ -5,31 +5,28 @@ use clap::{Parser, Subcommand};
 #[command(name = "git-commit-gen")]
 #[command(about = "Automatically generate git commit messages", long_about = None)]
 pub struct Cli {
+    /// Use a specific prompt template (overrides config)
+    #[arg(short, long)]
+    pub template: Option<String>,
+
+    /// Interactively pick a template when --template is not provided
+    #[arg(long)]
+    pub pick_template: bool,
+
+    /// Skip confirmation and directly commit with generated message
+    #[arg(short, long)]
+    pub yes: bool,
+
+    /// Skip opening editor, use generated message directly (only works with --yes)
+    #[arg(long)]
+    pub no_edit: bool,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Generate a commit message based on staged changes
-    #[command(alias = "gen")]
-    Generate {
-        /// Use a specific prompt template (overrides config)
-        #[arg(short, long)]
-        template: Option<String>,
-
-        /// Interactively pick a template when --template is not provided
-        #[arg(long)]
-        pick_template: bool,
-
-        /// Skip confirmation and directly commit with generated message
-        #[arg(short, long)]
-        yes: bool,
-
-        /// Skip opening editor, use generated message directly (only works with --yes)
-        #[arg(long)]
-        no_edit: bool,
-    },
     /// Configure AI settings and prompt templates
     Config {
         /// Set the AI API base URL
