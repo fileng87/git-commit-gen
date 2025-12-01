@@ -5,9 +5,6 @@ use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
 
-#[cfg(test)]
-use crate::utils;
-
 // Embed the default config template
 const DEFAULT_CONFIG: &str = include_str!("../assets/config.toml");
 
