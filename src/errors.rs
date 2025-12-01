@@ -70,7 +70,9 @@ pub enum ConfigError {
     #[error("Failed to parse config: {0}")]
     ParseError(String),
 
-    #[error("API key is missing. Set it in config file or GIT_COMMIT_GEN_API_KEY environment variable.")]
+    #[error(
+        "API key is missing. Set it in config file or GIT_COMMIT_GEN_API_KEY environment variable."
+    )]
     ApiKeyMissing,
 }
 
@@ -98,4 +100,3 @@ impl From<String> for HandlerError {
         HandlerError::OperationFailed(s)
     }
 }
-

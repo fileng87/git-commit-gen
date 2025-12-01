@@ -9,4 +9,3 @@ pub mod templates;
 pub mod utils;
 
 pub use errors::AppError;
-
