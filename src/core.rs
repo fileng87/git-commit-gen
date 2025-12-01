@@ -14,9 +14,7 @@ pub struct CommitGenerator {
 
 impl CommitGenerator {
     /// Create a new CommitGenerator instance
-    pub fn new(project_root: PathBuf) -> Result<Self, AppError> {
-        let config = Config::new(project_root.clone());
-        
+    pub fn new(project_root: PathBuf, config: Config) -> Result<Self, AppError> {
         if !config.exists() {
             return Err(ConfigError::ConfigNotFound {
                 path: config.config_path(),
@@ -71,15 +69,14 @@ impl CommitGenerator {
         prompt
     }
 
-
     /// Open editor to edit commit message
     pub fn edit_message(&self, initial_message: &str) -> Result<String, AppError> {
+        // Get git editor or fallback to default
+        let editor = self.git.get_editor()?;
+        
         // Create temporary file
         let temp_file = std::env::temp_dir().join(format!("git-commit-msg-{}.tmp", std::process::id()));
         fs::write(&temp_file, initial_message)?;
-
-        // Get git editor or fallback to default
-        let editor = self.git.get_editor()?;
 
         // Open editor
         let status = Command::new(&editor)
@@ -105,7 +102,6 @@ impl CommitGenerator {
 
         Ok(cleaned)
     }
-
 
     /// Clean commit message (remove comments and empty lines)
     pub fn clean_commit_message(&self, message: &str) -> String {
@@ -138,20 +134,18 @@ impl CommitGenerator {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use tempfile::TempDir;
 
     #[test]
     fn test_build_user_prompt() {
-        let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
+        use super::*;
+        use tempfile::TempDir;
         
-        // Create a minimal generator just for testing build_user_prompt
-        // We can't easily test the full flow without external dependencies
-        let config = Config::new(project_root);
+        let temp_dir = TempDir::new().unwrap();
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         let git = Git::new(temp_dir.path().to_path_buf());
         let generator = CommitGenerator { config, git };
-
+        
         let diff = "diff --git a/file.rs b/file.rs\n+new line";
         let files = vec!["file.rs".to_string(), "other.rs".to_string()];
 
@@ -167,11 +161,15 @@ mod tests {
 
     #[test]
     fn test_clean_commit_message() {
+        use super::*;
+        use tempfile::TempDir;
+        
         let temp_dir = TempDir::new().unwrap();
-        let config = Config::new(temp_dir.path().to_path_buf());
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         let git = Git::new(temp_dir.path().to_path_buf());
         let generator = CommitGenerator { config, git };
-
+        
         let message_with_comments = "feat: add feature\n\n# This is a comment\n\nActual message\n\n# Another comment";
         let cleaned = generator.clean_commit_message(message_with_comments);
         
@@ -182,11 +180,15 @@ mod tests {
 
     #[test]
     fn test_clean_commit_message_empty_lines() {
+        use super::*;
+        use tempfile::TempDir;
+        
         let temp_dir = TempDir::new().unwrap();
-        let config = Config::new(temp_dir.path().to_path_buf());
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         let git = Git::new(temp_dir.path().to_path_buf());
         let generator = CommitGenerator { config, git };
-
+        
         let message = "feat: add feature\n\n\n\n\nBody text";
         let cleaned = generator.clean_commit_message(message);
         
@@ -196,11 +198,15 @@ mod tests {
 
     #[test]
     fn test_clean_commit_message_only_comments() {
+        use super::*;
+        use tempfile::TempDir;
+        
         let temp_dir = TempDir::new().unwrap();
-        let config = Config::new(temp_dir.path().to_path_buf());
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         let git = Git::new(temp_dir.path().to_path_buf());
         let generator = CommitGenerator { config, git };
-
+        
         let message = "# Comment 1\n# Comment 2\n\n";
         let cleaned = generator.clean_commit_message(message);
         
@@ -209,11 +215,15 @@ mod tests {
 
     #[test]
     fn test_clean_commit_message_preserves_content() {
+        use super::*;
+        use tempfile::TempDir;
+        
         let temp_dir = TempDir::new().unwrap();
-        let config = Config::new(temp_dir.path().to_path_buf());
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         let git = Git::new(temp_dir.path().to_path_buf());
         let generator = CommitGenerator { config, git };
-
+        
         let message = "feat: add feature\n\nThis is the body\nWith multiple lines";
         let cleaned = generator.clean_commit_message(message);
         

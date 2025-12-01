@@ -73,18 +73,18 @@ fn setup_test_repo() -> (TempDir, PathBuf) {
 }
 
 /// Setup default config files (no env overrides; mock 覆寫再補)
-fn setup_config(repo_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-    let config = Config::new(repo_path.clone());
+fn setup_config(temp_home: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    let config = Config::new(temp_home.clone());
     config.generate_default_files(true)?;
     Ok(())
 }
 
 /// Update config to use mock server URL and test API key
 fn update_config_for_mock(
-    repo_path: &PathBuf,
+    temp_home: &PathBuf,
     mock_url: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let config = Config::new(repo_path.clone());
+    let config = Config::new(temp_home.clone());
     let config_path = config.config_path();
     let config_content = fs::read_to_string(&config_path)?;
     let mut config_value: Value = toml::from_str(&config_content)?;
@@ -109,9 +109,13 @@ fn update_config_for_mock(
 async fn test_generate_commit_message_with_mock_api() {
     // Setup test repository
     let (_temp_dir, repo_path) = setup_test_repo();
+    
+    // Setup temp home directory for config
+    let temp_home = TempDir::new().unwrap();
+    let temp_home_path = temp_home.path().to_path_buf();
 
     // Setup config
-    setup_config(&repo_path).unwrap();
+    setup_config(&temp_home_path).unwrap();
 
     // Setup mock server
     let mock_server = MockServer::start().await;
@@ -135,10 +139,11 @@ async fn test_generate_commit_message_with_mock_api() {
 
     // Update config to use mock server URL
     let mock_url = format!("http://127.0.0.1:{}", mock_server.address().port());
-    update_config_for_mock(&repo_path, &mock_url).unwrap();
+    update_config_for_mock(&temp_home_path, &mock_url).unwrap();
 
-    // Create generator and test
-    let generator = CommitGenerator::new(repo_path.clone()).unwrap();
+    // Create generator with test config
+    let config = Config::new(temp_home_path);
+    let generator = CommitGenerator::new(repo_path.clone(), config).unwrap();
     let message = generator.generate_message(None).await.unwrap();
 
     assert!(message.contains("feat"));
@@ -148,7 +153,12 @@ async fn test_generate_commit_message_with_mock_api() {
 #[tokio::test]
 async fn test_generate_commit_message_with_conventional_template() {
     let (_temp_dir, repo_path) = setup_test_repo();
-    setup_config(&repo_path).unwrap();
+    
+    // Setup temp home directory for config
+    let temp_home = TempDir::new().unwrap();
+    let temp_home_path = temp_home.path().to_path_buf();
+    
+    setup_config(&temp_home_path).unwrap();
 
     let mock_server = MockServer::start().await;
 
@@ -168,9 +178,10 @@ async fn test_generate_commit_message_with_conventional_template() {
         .await;
 
     let mock_url = format!("http://127.0.0.1:{}", mock_server.address().port());
-    update_config_for_mock(&repo_path, &mock_url).unwrap();
+    update_config_for_mock(&temp_home_path, &mock_url).unwrap();
 
-    let generator = CommitGenerator::new(repo_path.clone()).unwrap();
+    let config = Config::new(temp_home_path);
+    let generator = CommitGenerator::new(repo_path.clone(), config).unwrap();
     let message = generator.generate_message(Some("conventional")).await.unwrap();
 
     assert!(message.contains("feat"));
@@ -192,10 +203,15 @@ async fn test_generate_commit_message_with_real_api() {
     println!("===================================\n");
 
     let (_temp_dir, repo_path) = setup_test_repo();
-    setup_config(&repo_path).unwrap();
+    
+    // Setup temp home directory for config
+    let temp_home = TempDir::new().unwrap();
+    let temp_home_path = temp_home.path().to_path_buf();
+    
+    setup_config(&temp_home_path).unwrap();
 
     // 覆寫配置為實際環境值
-    let config = Config::new(repo_path.clone());
+    let config = Config::new(temp_home_path.clone());
     let config_path = config.config_path();
     let config_content = fs::read_to_string(&config_path).unwrap();
     let mut config_value: Value = toml::from_str(&config_content).unwrap();
@@ -207,7 +223,7 @@ async fn test_generate_commit_message_with_real_api() {
     }
     fs::write(&config_path, toml::to_string(&config_value).unwrap()).unwrap();
 
-    let generator = CommitGenerator::new(repo_path.clone()).unwrap();
+    let generator = CommitGenerator::new(repo_path.clone(), config).unwrap();
     let message = generator.generate_message(None).await.unwrap();
 
     println!("=== Generated Commit Message (Raw) ===");
@@ -226,9 +242,9 @@ async fn test_generate_commit_message_with_real_api() {
 #[test]
 fn test_init_command_creates_config_and_templates() {
     let temp_dir = TempDir::new().unwrap();
-    let repo_path = temp_dir.path().to_path_buf();
+    let temp_home = temp_dir.path().to_path_buf();
 
-    let config = Config::new(repo_path.clone());
+    let config = Config::new(temp_home.clone());
     config.generate_default_files(false).unwrap();
 
     // Check config file exists
@@ -264,12 +280,12 @@ fn test_git_operations() {
 #[test]
 fn test_config_load_default() {
     let temp_dir = TempDir::new().unwrap();
-    let repo_path = temp_dir.path().to_path_buf();
+    let temp_home = temp_dir.path().to_path_buf();
 
-    let config = Config::new(repo_path.clone());
+    let config = Config::new(temp_home.clone());
     config.generate_default_files(false).unwrap();
 
-    setup_config(&repo_path).unwrap();
+    setup_config(&temp_home).unwrap();
 
     // Inject API key into config for loading
     let config_path = config.config_path();
@@ -292,7 +308,12 @@ fn test_config_load_default() {
 #[tokio::test]
 async fn test_full_workflow_with_mock() {
     let (_temp_dir, repo_path) = setup_test_repo();
-    setup_config(&repo_path).unwrap();
+    
+    // Setup temp home directory for config
+    let temp_home = TempDir::new().unwrap();
+    let temp_home_path = temp_home.path().to_path_buf();
+    
+    setup_config(&temp_home_path).unwrap();
 
     let mock_server = MockServer::start().await;
 
@@ -312,10 +333,11 @@ async fn test_full_workflow_with_mock() {
         .await;
 
     let mock_url = format!("http://127.0.0.1:{}", mock_server.address().port());
-    update_config_for_mock(&repo_path, &mock_url).unwrap();
+    update_config_for_mock(&temp_home_path, &mock_url).unwrap();
 
     // Test full workflow
-    let generator = CommitGenerator::new(repo_path.clone()).unwrap();
+    let config = Config::new(temp_home_path);
+    let generator = CommitGenerator::new(repo_path.clone(), config).unwrap();
     
     // Generate message
     let message = generator.generate_message(None).await.unwrap();
