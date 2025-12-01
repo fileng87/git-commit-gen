@@ -35,12 +35,6 @@ impl Handler {
     /// Handle a command
     pub fn handle_command(&self, cmd: &Commands) -> Result<(), AppError> {
         match cmd {
-            Commands::Generate {
-                template,
-                pick_template,
-                yes,
-                no_edit,
-            } => self.handle_generate(template.as_deref(), *pick_template, *yes, *no_edit),
             Commands::Config {
                 base_url,
                 api_key,
@@ -51,7 +45,7 @@ impl Handler {
     }
 
     /// Handle generate command
-    fn handle_generate(
+    pub fn handle_generate(
         &self,
         template: Option<&str>,
         pick_template: bool,
