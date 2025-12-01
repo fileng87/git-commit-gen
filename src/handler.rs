@@ -3,6 +3,7 @@ use crate::config::Config;
 use crate::core::CommitGenerator;
 use crate::errors::{AppError, ConfigError, GitError, HandlerError};
 use crate::git::Git;
+use crate::utils;
 use inquire::Select;
 use std::fs;
 use std::env;
@@ -35,7 +36,8 @@ impl Handler {
 
     /// Handle init command
     fn handle_init(&self, force: bool) -> Result<(), AppError> {
-        let config = Config::new(self.project_root.clone());
+        let home_dir = utils::get_home_dir()?;
+        let config = Config::new(home_dir);
         
         if force {
             config.remove_existing_files()?;
@@ -71,7 +73,9 @@ impl Handler {
             return Err(GitError::NoStagedChanges.into());
         }
 
-        let generator = CommitGenerator::new(self.project_root.clone())?;
+        let home_dir = utils::get_home_dir()?;
+        let config = Config::new(home_dir);
+        let generator = CommitGenerator::new(self.project_root.clone(), config)?;
         let rt = tokio::runtime::Runtime::new()
             .map_err(|e| HandlerError::OperationFailed(format!("Failed to create runtime: {}", e)))?;
         let message = rt.block_on(generator.generate_message(template))?;
@@ -132,7 +136,8 @@ impl Handler {
             return Ok(());
         }
 
-        let config = Config::new(self.project_root.clone());
+        let home_dir = utils::get_home_dir()?;
+        let config = Config::new(home_dir);
         if !config.exists() {
             return Err(ConfigError::ConfigNotFound { path: config.config_path() }.into());
         }

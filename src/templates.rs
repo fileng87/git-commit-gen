@@ -1,3 +1,7 @@
+use crate::errors::{AppError, ConfigError};
+use std::fs;
+use std::path::PathBuf;
+
 // Embed default templates
 pub const DEFAULT_TEMPLATE: &str = include_str!("../assets/templates/default.md");
 pub const CONVENTIONAL_TEMPLATE: &str = include_str!("../assets/templates/conventional.md");
@@ -14,6 +18,25 @@ pub fn get_builtin_template(name: &str) -> Option<&'static str> {
 /// List all available built-in template names
 pub fn list_builtin_templates() -> Vec<&'static str> {
     vec!["default", "conventional"]
+}
+
+/// Load template content from file or built-in templates
+pub fn load_template(template_path: &PathBuf, template_name: &str) -> Result<String, AppError> {
+    if !template_path.exists() {
+        // Try built-in template
+        if let Some(content) = get_builtin_template(template_name) {
+            return Ok(content.to_string());
+        }
+        return Err(ConfigError::TemplateNotFound {
+            name: template_name.to_string(),
+        }.into());
+    }
+
+    fs::read_to_string(template_path)
+        .map_err(|_| ConfigError::TemplateNotFound {
+            name: template_name.to_string(),
+        })
+        .map_err(Into::into)
 }
 
 #[cfg(test)]

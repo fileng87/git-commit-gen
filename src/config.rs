@@ -5,6 +5,9 @@ use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
 
+#[cfg(test)]
+use crate::utils;
+
 // Embed the default config template
 const DEFAULT_CONFIG: &str = include_str!("../assets/config.toml");
 
@@ -23,18 +26,18 @@ struct ConfigFile {
 
 /// Configuration manager for git-commit-gen
 pub struct Config {
-    project_root: PathBuf,
+    home_dir: PathBuf,
 }
 
 impl Config {
-    /// Create a new Config instance for the given project root
-    pub fn new(project_root: PathBuf) -> Self {
-        Self { project_root }
+    /// Create a new Config instance
+    pub fn new(home_dir: PathBuf) -> Self {
+        Self { home_dir }
     }
 
     /// Get the config directory path
     pub fn config_dir(&self) -> PathBuf {
-        self.project_root.join(".git-commit-gen")
+        self.home_dir.join(".git-commit-gen")
     }
 
     /// Get the templates directory path
@@ -146,22 +149,7 @@ impl Config {
     /// Load template content
     pub fn load_template(&self, template_name: &str) -> Result<String, AppError> {
         let template_path = self.template_path(template_name);
-        
-        if !template_path.exists() {
-            // Try built-in template
-            if let Some(content) = templates::get_builtin_template(template_name) {
-                return Ok(content.to_string());
-            }
-            return Err(ConfigError::TemplateNotFound {
-                name: template_name.to_string(),
-            }.into());
-        }
-
-        fs::read_to_string(&template_path)
-            .map_err(|_| ConfigError::TemplateNotFound {
-                name: template_name.to_string(),
-            })
-            .map_err(Into::into)
+        templates::load_template(&template_path, template_name)
     }
 }
 
@@ -173,37 +161,39 @@ mod tests {
 
     #[test]
     fn test_config_dir() {
-        let project_root = PathBuf::from("/test/project");
-        let config = Config::new(project_root);
-        assert_eq!(config.config_dir(), PathBuf::from("/test/project/.git-commit-gen"));
+        let home_dir = utils::get_home_dir().unwrap();
+        let config = Config::new(home_dir.clone());
+        assert_eq!(config.config_dir(), home_dir.join(".git-commit-gen"));
     }
 
     #[test]
     fn test_templates_dir() {
-        let project_root = PathBuf::from("/test/project");
-        let config = Config::new(project_root);
-        assert_eq!(config.templates_dir(), PathBuf::from("/test/project/.git-commit-gen/templates"));
+        let home_dir = utils::get_home_dir().unwrap();
+        let config = Config::new(home_dir.clone());
+        assert_eq!(config.templates_dir(), home_dir.join(".git-commit-gen/templates"));
     }
 
     #[test]
     fn test_config_path() {
-        let project_root = PathBuf::from("/test/project");
-        let config = Config::new(project_root);
-        assert_eq!(config.config_path(), PathBuf::from("/test/project/.git-commit-gen/config.toml"));
+        let home_dir = utils::get_home_dir().unwrap();
+        let config = Config::new(home_dir.clone());
+        assert_eq!(config.config_path(), home_dir.join(".git-commit-gen/config.toml"));
     }
 
     #[test]
     fn test_template_path() {
-        let project_root = PathBuf::from("/test/project");
-        let config = Config::new(project_root);
-        assert_eq!(config.template_path("default"), PathBuf::from("/test/project/.git-commit-gen/templates/default.md"));
+        let home_dir = utils::get_home_dir().unwrap();
+        let config = Config::new(home_dir.clone());
+        assert_eq!(config.template_path("default"), home_dir.join(".git-commit-gen/templates/default.md"));
     }
 
     #[test]
     fn test_generate_default_files() {
+        // Use a temporary home directory for testing
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root);
+        let temp_home = temp_dir.path().to_path_buf();
+        
+        let config = Config::new(temp_home);
         
         // Generate files
         config.generate_default_files(false).unwrap();
@@ -229,9 +219,11 @@ mod tests {
 
     #[test]
     fn test_generate_default_files_already_exists() {
+        // Use a temporary home directory for testing
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root);
+        let temp_home = temp_dir.path().to_path_buf();
+        
+        let config = Config::new(temp_home);
         
         // Generate files first time
         config.generate_default_files(false).unwrap();
@@ -245,8 +237,8 @@ mod tests {
     #[test]
     fn test_generate_default_files_force_overwrite() {
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root);
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         
         // Generate files first time
         config.generate_default_files(false).unwrap();
@@ -267,8 +259,8 @@ mod tests {
     #[test]
     fn test_config_exists() {
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root);
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         
         // Initially doesn't exist
         assert!(!config.exists());
@@ -283,8 +275,8 @@ mod tests {
     #[test]
     fn test_load_config() {
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root.clone());
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         
         // Generate default files
         config.generate_default_files(false).unwrap();
@@ -306,8 +298,8 @@ mod tests {
     #[test]
     fn test_load_config_not_found() {
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root);
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         
         // Try to load config that doesn't exist
         let result = config.load_config();
@@ -321,8 +313,8 @@ mod tests {
     #[test]
     fn test_load_template_from_file() {
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root);
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         
         // Generate default files
         config.generate_default_files(false).unwrap();
@@ -335,8 +327,8 @@ mod tests {
     #[test]
     fn test_load_template_builtin() {
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root);
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         
         // Load built-in template (file doesn't exist, should use built-in)
         let template = config.load_template("default").unwrap();
@@ -346,8 +338,8 @@ mod tests {
     #[test]
     fn test_load_template_not_found() {
         let temp_dir = TempDir::new().unwrap();
-        let project_root = temp_dir.path().to_path_buf();
-        let config = Config::new(project_root);
+        let temp_home = temp_dir.path().to_path_buf();
+        let config = Config::new(temp_home);
         
         // Try to load non-existent template
         let result = config.load_template("nonexistent");

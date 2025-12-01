@@ -6,6 +6,7 @@ pub mod errors;
 pub mod git;
 pub mod handler;
 pub mod templates;
+pub mod utils;
 
 pub use errors::AppError;
 
