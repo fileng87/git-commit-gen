@@ -340,5 +340,4 @@ async fn test_full_workflow_with_mock() {
     assert!(!message.is_empty());
     assert!(message.contains("feat"));
 
-    assert!(!message.is_empty());
 }
