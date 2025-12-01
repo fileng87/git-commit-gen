@@ -1,6 +1,11 @@
 [package]
 name = "git-commit-gen"
 version = "0.1.0"
+authors = ["ZyraX <oscarcoll.930714@gmail.com>"]
+description = "AI-assisted Git commit message generator for staged changes"
+license = "MIT"
+repository = "https://github.com/fileng87/git-commit-gen"
+homepage = "https://github.com/fileng87/git-commit-gen"
 edition = "2024"
 
 [[bin]]
