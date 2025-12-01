@@ -203,14 +203,16 @@ mod tests {
 
     #[test]
     fn test_config_dir() {
-        let home_dir = utils::get_home_dir().unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let home_dir = temp_dir.path().to_path_buf();
         let config = Config::new(home_dir.clone());
         assert_eq!(config.config_dir(), home_dir.join(".git-commit-gen"));
     }
 
     #[test]
     fn test_templates_dir() {
-        let home_dir = utils::get_home_dir().unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let home_dir = temp_dir.path().to_path_buf();
         let config = Config::new(home_dir.clone());
         assert_eq!(
             config.templates_dir(),
@@ -220,7 +222,8 @@ mod tests {
 
     #[test]
     fn test_config_path() {
-        let home_dir = utils::get_home_dir().unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let home_dir = temp_dir.path().to_path_buf();
         let config = Config::new(home_dir.clone());
         assert_eq!(
             config.config_path(),
@@ -230,7 +233,8 @@ mod tests {
 
     #[test]
     fn test_template_path() {
-        let home_dir = utils::get_home_dir().unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let home_dir = temp_dir.path().to_path_buf();
         let config = Config::new(home_dir.clone());
         assert_eq!(
             config.template_path("default"),
