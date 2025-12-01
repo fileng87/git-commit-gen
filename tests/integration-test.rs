@@ -339,5 +339,4 @@ async fn test_full_workflow_with_mock() {
     let message = generator.generate_message(None).await.unwrap();
     assert!(!message.is_empty());
     assert!(message.contains("feat"));
-
 }
