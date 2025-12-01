@@ -67,8 +67,13 @@ Requirements for the endpoint:
 
 Two built-ins (`default`, `conventional`) live in `~/.git-commit-gen/templates`.  
 Add more by dropping `<name>.md` files in that folder, then call with `--template <name>` or `--pick-template`.
+You can also create your own templates by creating a file in the `templates` folder and naming it `<name>.md`.
 
 ## Prerequisites
 
 - Git with staged changes (`git add ...`).
 - Network access to your LLM endpoint; API key configured.
+
+## License
+
+MIT - see [LICENSE](LICENSE) file for details
