@@ -18,7 +18,7 @@ pub struct Cli {
     pub yes: bool,
 
     /// Skip opening editor, use generated message directly (only works with --yes)
-    #[arg(long)]
+    #[arg(long, requires = "yes")]
     pub no_edit: bool,
 
     #[command(subcommand)]
